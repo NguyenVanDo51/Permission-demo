@@ -2,6 +2,15 @@
 
 @section('title', 'View all role')
 
+@push('scripts')
+
+    <style>
+        .first-letter:first-letter {
+            text-transform: uppercase;
+        }
+    </style>
+@endpush
+
 @section('content')
     <h3>Cấp quyền cho user: {{ $user->name }}</h3>
     @if(!empty($user))
@@ -22,7 +31,9 @@
             @foreach($data as $key => $value)
                 <div class="row">
                     <div class="col-12">
-                        <h3>{{ $key }}</h3>
+                        @if (count($value) > 0)
+                        <h3 class="first-letter">{{ $key }}</h3>
+                        @endif
                         <input type="hidden" name="user" value="{{ $user->id }}">
                     </div>
                 </div>

@@ -4,19 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Models\Post;
-use Illuminate\Http\Request;
 use Mockery\Exception;
 
 class CommentController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $data = $request->validate([
-            'post' => 'required'
-        ]);
-
         try {
-            $post = Post::query()->findOrFail($data['post']);
+            $post = Post::query()->findOrFail(1)->first();
             return $post->comments()->get();
         } catch (Exception $exception) {
 

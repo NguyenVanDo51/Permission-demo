@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Route;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Mockery\Exception;
 use Spatie\Permission\Models\Permission;
@@ -24,20 +24,7 @@ class UserController extends Controller
 
     public function test()
     {
-//        Permission::create(['name' => 'posts.*']);
-//        Auth::user()->givePermissionTo('posts.*');
-        Auth::user()->givePermissionTo('posts.show');
-
-//        Permission::create(['name' => 'posts.show']);
-//        Permission::create(['name' => 'posts.edit']);
-//        Permission::create(['name' => 'posts.update']);
-//        Permission::create(['name' => 'posts.destroy']);
-
-//        Permission::
-
-        return "test";
     }
-
 
     /**
      * @param User $user
@@ -48,39 +35,32 @@ class UserController extends Controller
     {
         $permissions = $user->getPermissionNames();
 
-        foreach ($permissions as $permission) {
-            if (Str::contains($permission, '.*')) {
-                $permissions->add(Str::replaceFirst('*', 'index', $permission));
-                $permissions->add(Str::replaceFirst('*', 'show', $permission));
-                $permissions->add(Str::replaceFirst('*', 'edit', $permission));
-                $permissions->add(Str::replaceFirst('*', 'update', $permission));
-                $permissions->add(Str::replaceFirst('*', 'destroy', $permission));
-            }
-        }
-
+        // Lay tat ca roule cua user
         $roles = $user->roles()->pluck('name');
+
         $allRole = Role::all();
 
+        // Lay toan bo route
         $routes = app('router')->getRoutes();
 
-        $routes = collect($routes->getRoutesByName());
-
         // Lay ten cua toan bo cac routes
-        $routes = $routes->keys();
+        $routes = collect($routes->getRoutesByName())->keys();
 
-        // Ten cac route se duoc phan quyen, can them moi khi tao them route
-        $models = ['posts', 'roles', 'users', 'comments', 'permissions'];
+        try {
+            $models = Route::query()->pluck('name');
+        } catch (Exception $exception) {
+            logger('Exception when get routes', [
+                "Exception" => $exception->getMessage()
+            ]);
+        }
 
         $data = [];
-
-        // Mang $model la danh sach cac route can lay (VD: posts.index, posts.show, roles.index, ...)
-        foreach ($models as $item) {
-
+        // Mang $model la danh sach cac route da dinh nghi can phan quyen (VD: posts.index, posts.show, roles.index, ...)
+        foreach ($models as $model) {
             // So sanh cac routes voi tung phan tu cua mang $models de lay het cac route cua tung model
-            $data[$item] = $routes->filter(function ($value) use ($item) {
-
-                // Loc routes, chi lay ra nhung route co ten bat dau la cac phan tu trong $models
-                return Str::startsWith($value, $item);
+            $data[$model] = $routes->filter(function ($value) use ($model) {
+//              chi lay ra nhung route co ten bat dau la cac phan tu trong $models
+                return Str::startsWith($value, $model);
             });
         }
 
@@ -90,31 +70,36 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        // Lay ra toan bo permission tu request
         $permissions = $request->all();
 
         try {
+
+            // Tim kiem user thong qua id duoc gui tu request, luu trong key 'user' cua bien $permission
             $user = User::query()->findOrFail(Arr::pull($permissions, "user"));
 
+            // Xoa bien _token
             unset($permissions['_token'], $permissions['user']);
 
+            // Lay toan bo key (la cac permissions ma usee duoc phan quyen)
             $permissions = array_keys($permissions);
 
-            $permissions = array_map(function($permission) {
+            // Thay the '_' = '.'
+            $permissions = array_map(function ($permission) {
                 return str_replace('_', '.', $permission);
             }, $permissions);
 
-            foreach ( $permissions as $permission) {
-                $permission = str_replace('_', '.', $permission);
-
-                // Them permissions neu chua ton tai
+            foreach ($permissions as $permission) {
+                // Them moi permissions neu chua ton tai
                 Permission::query()->firstOrCreate(['name' => $permission]);
             }
 
+            // Dong bo permission cho user
             $user->syncPermissions($permissions);
         } catch (Exception $exception) {
             logger("Exception when update permission!", [
                 "exception: " => $exception->getMessage()
-            ] );
+            ]);
         }
 
         return redirect()->route('users.index');

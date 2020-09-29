@@ -23,7 +23,7 @@ class RoleController extends Controller
         $roles = Role::query()->pluck('name');
 
         $data = $request->validate([
-           'role' => ['required', Rule::notIn($roles)]
+            'role' => ['required', Rule::notIn($roles)]
         ]);
 
         Role::create(['name' => $data['role']]);
@@ -51,10 +51,10 @@ class RoleController extends Controller
         return redirect()->route('roles.index');
     }
 
-    public function update (Request $request, Role $role)
+    public function update(Request $request, Role $role)
     {
         $data = $request->validate([
-           'name' => 'required'
+            'name' => 'required'
         ]);
 
         $role->syncPermissions($request->get('permissions'));

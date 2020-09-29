@@ -6,11 +6,30 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
-Route::redirect('dashboard', 'users');
+Route::redirect('dashboard', '/');
 
 Route::get('/', function () {
-    return view('welcome');
+    // Lay toan bo route
+    $routes = app('router')->getRoutes();
+
+    // Lay ten cua toan bo cac routes
+    $routes = collect($routes->getRoutesByName())->keys();
+
+    $actions = \App\Models\Route::query()->pluck('name');
+
+    $data = [];
+    // Mang $model la danh sach cac route da dinh nghi can phan quyen (VD: posts.index, posts.show, roles.index, ...)
+    foreach ($actions as $action) {
+        $routes->each(function ($value) use ($action, &$data) {
+            if (Str::contains($value, $action . '.index')) {
+                array_push($data, $value);
+            }
+        });
+    }
+
+    return view('welcome', compact('data'));
 });
 
 Route::group(['auth:sanctum', 'verified'], function () {
@@ -54,8 +73,7 @@ Route::group(['auth:sanctum', 'verified'], function () {
     Route::get('posts/{post}', [PostController::class, 'show'])
         ->middleware('can:posts.show')->name('posts.show');
 
-
-    Route::get('/comments', [CommentController::class, 'index'])->name('posts.comments.index');
+    Route::get('post/comments', [CommentController::class, 'index'])->name('posts.comments.index');
 
     Route::get('comment/{comment}', [CommentController::class, 'show'])->name('comments.show');
 

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Comment;
 use App\Models\Post;
+use App\Models\Route;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Auth;
@@ -26,5 +27,7 @@ class DatabaseSeeder extends Seeder
 //        $superAdmin = User::query()->where('name', 'super admin')->first();
 //        $superAdmin->assignRole(['Super Admin']);
 //        Comment::factory()->count(30)->create();
+
+        Route::factory()->count(5)->create();
     }
 }
